@@ -221,6 +221,14 @@ const WorkoutPlanner = ({ navigation, route }) => {
         style={styles.background}
       >
         <SafeAreaView style={styles.container}>
+          {/* Add Back Button */}
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => navigation.goBack()}
+          >
+            <Ionicons name="arrow-back" size={24} color={COLORS.text} />
+          </TouchableOpacity>
+
           <Text style={styles.title}>
             {isTemplate ? "CUSTOMIZE\nTEMPLATE" : "CREATE\nWORKOUT"}
           </Text>

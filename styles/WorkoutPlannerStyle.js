@@ -20,6 +20,7 @@ export default StyleSheet.create({
     color: COLORS.text,
     letterSpacing: 2,
     marginBottom: 20,
+    marginLeft: 50,
     textShadowColor: COLORS.accent,
     textShadowOffset: { width: 0, height: 2 },
     textShadowRadius: 1,
@@ -192,5 +193,14 @@ export default StyleSheet.create({
     color: "rgba(255,255,255,0.6)",
     fontSize: 12,
     marginTop: 5,
+  },
+  backButton: {
+    position: "absolute",
+    top: 20,
+    left: 20,
+    zIndex: 1,
+    padding: 10,
+    borderRadius: 8,
+    backgroundColor: "rgba(0,0,0,0.3)",
   },
 });
