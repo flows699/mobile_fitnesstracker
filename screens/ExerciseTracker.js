@@ -115,7 +115,6 @@ const ExerciseTracker = ({ navigation }) => {
 };
 
 const styles = StyleSheet.create({
-  // ...existing styles...
   setInputs: {
     flexDirection: "row",
     alignItems: "center",
