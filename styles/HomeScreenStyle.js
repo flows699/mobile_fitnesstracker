@@ -1,5 +1,6 @@
-import { StyleSheet, Platform } from 'react-native';
+import { StyleSheet, Platform } from "react-native";
 
+// Color Constants
 export const COLORS = {
   gradient1: "#000000",
   gradient2: "#1a1a1a",
