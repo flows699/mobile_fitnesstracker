@@ -2,119 +2,164 @@ import React, { useContext, useState } from "react";
 import {
   View,
   Text,
-  FlatList,
-  TouchableOpacity,
   StyleSheet,
+  TouchableOpacity,
+  FlatList,
   SafeAreaView,
+  Alert,
+  Modal,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
-import { Ionicons } from "@expo/vector-icons";
-import WorkoutContext from "../context/WorkoutContext";
 import { COLORS } from "../styles/HomeScreenStyle";
-import { WORKOUT_TEMPLATES } from "../data/workoutTemplates";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { WorkoutContext } from "../context/WorkoutContext";
+import CreateWorkoutModal from "../components/CreateWorkoutModal";
 
 const ManageWorkouts = ({ navigation }) => {
-  const { workouts, saveWorkout } = useContext(WorkoutContext);
-  const [showTemplates, setShowTemplates] = useState(true);
+  const { workouts, deleteWorkout } = useContext(WorkoutContext);
+  const [deleteModal, setDeleteModal] = useState(false);
+  const [workoutToDelete, setWorkoutToDelete] = useState(null);
+  const [showCreateModal, setShowCreateModal] = useState(false);
 
-  // Add this safety check
-  const templates = Object.values(WORKOUT_TEMPLATES || {});
-
-  const deleteWorkout = (workoutToDelete) => {
-    const updatedWorkouts = workouts.filter(
-      (w) => w.name !== workoutToDelete.name
-    );
-    saveWorkout(updatedWorkouts);
+  const handleDelete = (workout) => {
+    setWorkoutToDelete(workout);
+    setDeleteModal(true);
   };
 
-  const renderWorkoutCard = (item, isTemplate = false) => (
-    <View style={styles.workoutCard}>
+  const confirmDelete = () => {
+    deleteWorkout(workoutToDelete);
+    setDeleteModal(false);
+    setWorkoutToDelete(null);
+  };
+
+  const renderWorkoutItem = ({ item }) => (
+    <TouchableOpacity
+      style={styles.workoutItem}
+      onPress={() => navigation.navigate("EditWorkout", { workout: item })}
+    >
       <View style={styles.workoutHeader}>
-        <View>
-          <Text style={styles.workoutName}>{item.name}</Text>
-          {isTemplate && (
-            <Text style={styles.templateTag}>PRE-MADE TEMPLATE</Text>
-          )}
-          {isTemplate && (
-            <Text style={styles.templateDescription}>{item.description}</Text>
-          )}
-        </View>
-        <Text style={styles.exerciseCount}>
-          {item.exercises.length} exercises
-        </Text>
-      </View>
-
-      <View style={styles.exerciseList}>
-        {item.exercises.map((exercise, idx) => (
-          <Text key={idx} style={styles.exerciseItem}>
-            • {exercise.name} ({exercise.sets.length} × {exercise.sets[0].reps})
-          </Text>
-        ))}
-      </View>
-
-      <View style={styles.buttonRow}>
-        <TouchableOpacity
-          style={[styles.button, styles.editButton]}
-          onPress={() =>
-            navigation.navigate("PlanWorkout", {
-              editWorkout: item,
-              isTemplate: isTemplate,
-            })
-          }
-        >
-          <Ionicons name="create-outline" size={20} color={COLORS.text} />
-          <Text style={styles.buttonText}>
-            {isTemplate ? "Use Template" : "Edit"}
-          </Text>
-        </TouchableOpacity>
-
-        {!isTemplate && (
+        <Text style={styles.workoutName}>{item.name}</Text>
+        <View style={styles.actionButtons}>
           <TouchableOpacity
-            style={[styles.button, styles.deleteButton]}
-            onPress={() => deleteWorkout(item)}
+            style={styles.actionButton}
+            onPress={() =>
+              navigation.navigate("EditWorkout", { workout: item })
+            }
           >
-            <Ionicons name="trash-outline" size={20} color={COLORS.text} />
-            <Text style={styles.buttonText}>Delete</Text>
+            <MaterialCommunityIcons
+              name="pencil"
+              size={24}
+              color={COLORS.accent}
+            />
           </TouchableOpacity>
-        )}
+          <TouchableOpacity
+            style={styles.actionButton}
+            onPress={() => handleDelete(item)}
+          >
+            <MaterialCommunityIcons
+              name="delete"
+              size={24}
+              color={COLORS.accent}
+            />
+          </TouchableOpacity>
+        </View>
       </View>
-    </View>
+      <Text style={styles.exerciseCount}>
+        {item.exercises?.length || 0} exercises
+      </Text>
+    </TouchableOpacity>
   );
 
   return (
-    <View style={styles.outerContainer}>
+    <View style={styles.container}>
       <LinearGradient
         colors={[COLORS.gradient1, COLORS.gradient2, COLORS.gradient3]}
         style={styles.background}
       >
-        <SafeAreaView style={styles.container}>
-          <Text style={styles.title}>WORKOUT{"\n"}LIBRARY</Text>
-
-          <View style={styles.segmentedControl}>
-            <TouchableOpacity
-              style={[styles.segment, showTemplates && styles.activeSegment]}
-              onPress={() => setShowTemplates(true)}
-            >
-              <Text style={styles.segmentText}>Templates</Text>
+        <SafeAreaView style={styles.safeArea}>
+          <View style={styles.header}>
+            <TouchableOpacity onPress={() => navigation.goBack()}>
+              <MaterialCommunityIcons
+                name="arrow-left"
+                size={30}
+                color={COLORS.text}
+              />
             </TouchableOpacity>
+            <Text style={styles.title}>Manage Workouts</Text>
             <TouchableOpacity
-              style={[styles.segment, !showTemplates && styles.activeSegment]}
-              onPress={() => setShowTemplates(false)}
+              style={styles.addButton}
+              onPress={() => setShowCreateModal(true)}
             >
-              <Text style={styles.segmentText}>My Workouts</Text>
+              <MaterialCommunityIcons
+                name="plus"
+                size={30}
+                color={COLORS.text}
+              />
             </TouchableOpacity>
           </View>
 
-          <FlatList
-            data={showTemplates ? templates : workouts}
-            keyExtractor={(item) => item.name}
-            renderItem={({ item }) => renderWorkoutCard(item, showTemplates)}
-            ListEmptyComponent={
-              <Text style={styles.emptyText}>
-                {showTemplates ? "No templates available" : "No workouts saved"}
-              </Text>
-            }
+          {!workouts || workouts.length === 0 ? (
+            <View style={styles.emptyContainer}>
+              <MaterialCommunityIcons
+                name="dumbbell"
+                size={50}
+                color={COLORS.accent}
+              />
+              <Text style={styles.emptyText}>No workouts created yet</Text>
+            </View>
+          ) : (
+            <FlatList
+              data={workouts}
+              renderItem={renderWorkoutItem}
+              keyExtractor={(item, index) => index.toString()}
+              contentContainerStyle={styles.list}
+            />
+          )}
+
+          <CreateWorkoutModal
+            visible={showCreateModal}
+            onClose={() => setShowCreateModal(false)}
+            onSuccess={() => setShowCreateModal(false)} // Just close the modal
           />
+
+          <Modal
+            visible={deleteModal}
+            transparent={true}
+            animationType="fade"
+            onRequestClose={() => setDeleteModal(false)}
+          >
+            <View style={styles.modalOverlay}>
+              <View style={styles.modalContent}>
+                <MaterialCommunityIcons
+                  name="alert-circle-outline"
+                  size={50}
+                  color={COLORS.accent}
+                />
+                <Text style={styles.modalTitle}>Delete Workout</Text>
+                <Text style={styles.modalText}>
+                  Are you sure you want to delete "{workoutToDelete?.name}"?
+                </Text>
+                <View style={styles.modalButtons}>
+                  <TouchableOpacity
+                    style={[styles.modalButton, styles.cancelButton]}
+                    onPress={() => setDeleteModal(false)}
+                  >
+                    <Text style={styles.modalButtonText}>Cancel</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.modalButton, styles.deleteButton]}
+                    onPress={confirmDelete}
+                  >
+                    <Text
+                      style={[styles.modalButtonText, styles.deleteButtonText]}
+                    >
+                      Delete
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </View>
+          </Modal>
         </SafeAreaView>
       </LinearGradient>
     </View>
@@ -122,32 +167,34 @@ const ManageWorkouts = ({ navigation }) => {
 };
 
 const styles = StyleSheet.create({
-  outerContainer: {
+  container: {
     flex: 1,
     backgroundColor: COLORS.gradient1,
   },
   background: {
     flex: 1,
   },
-  container: {
+  safeArea: {
     flex: 1,
     padding: 20,
   },
-  title: {
-    fontSize: 42,
-    fontWeight: "900",
-    color: COLORS.text,
-    letterSpacing: 2,
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     marginBottom: 20,
-    textShadowColor: COLORS.accent,
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 1,
   },
-  workoutCard: {
-    backgroundColor: "rgba(255,255,255,0.05)",
-    borderRadius: 12,
+  title: {
+    fontSize: 24,
+    fontWeight: "700",
+    color: COLORS.text,
+    marginLeft: 15,
+  },
+  workoutItem: {
+    backgroundColor: "rgba(255,255,255,0.1)",
+    borderRadius: 10,
     padding: 15,
-    marginBottom: 15,
+    marginBottom: 10,
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.1)",
   },
@@ -155,83 +202,97 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 10,
+    marginBottom: 5,
   },
   workoutName: {
-    fontSize: 20,
-    fontWeight: "700",
     color: COLORS.text,
+    fontSize: 18,
+    fontWeight: "600",
   },
   exerciseCount: {
-    color: COLORS.accent,
+    color: "rgba(255,255,255,0.7)",
     fontSize: 14,
   },
-  exerciseList: {
-    marginBottom: 15,
-  },
-  exerciseItem: {
-    color: "rgba(255,255,255,0.7)",
-    marginVertical: 2,
-  },
-  buttonRow: {
+  actionButtons: {
     flexDirection: "row",
-    justifyContent: "flex-end",
     gap: 10,
   },
-  button: {
-    flexDirection: "row",
-    alignItems: "center",
-    padding: 8,
-    paddingHorizontal: 12,
-    borderRadius: 6,
-    gap: 5,
+  actionButton: {
+    padding: 5,
   },
-  editButton: {
-    backgroundColor: "rgba(255,255,255,0.1)",
+  list: {
+    padding: 10,
   },
-  deleteButton: {
-    backgroundColor: COLORS.accent,
-  },
-  buttonText: {
-    color: COLORS.text,
-    fontWeight: "600",
-  },
-  templateTag: {
-    color: COLORS.accent,
-    fontSize: 12,
-    fontWeight: "600",
-    marginTop: 4,
-  },
-  templateDescription: {
-    color: "rgba(255,255,255,0.6)",
-    fontSize: 14,
-    marginTop: 4,
-  },
-  segmentedControl: {
-    flexDirection: "row",
-    marginBottom: 20,
-    backgroundColor: "rgba(255,255,255,0.1)",
-    borderRadius: 8,
-    padding: 4,
-  },
-  segment: {
+  emptyContainer: {
     flex: 1,
-    paddingVertical: 8,
+    justifyContent: "center",
     alignItems: "center",
-  },
-  activeSegment: {
-    backgroundColor: COLORS.accent,
-    borderRadius: 6,
-  },
-  segmentText: {
-    color: COLORS.text,
-    fontWeight: "600",
   },
   emptyText: {
     color: COLORS.text,
+    fontSize: 18,
+    marginTop: 10,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.7)",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 20,
+  },
+  modalContent: {
+    backgroundColor: COLORS.gradient1,
+    borderRadius: 15,
+    padding: 20,
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.1)",
+    width: "90%",
+    maxWidth: 340,
+  },
+  modalTitle: {
+    color: COLORS.text,
+    fontSize: 24,
+    fontWeight: "bold",
+    marginVertical: 15,
+  },
+  modalText: {
+    color: COLORS.text,
+    fontSize: 16,
     textAlign: "center",
-    marginTop: 20,
-    opacity: 0.7,
+    marginBottom: 20,
+    opacity: 0.8,
+  },
+  modalButtons: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    width: "100%",
+    gap: 10,
+  },
+  modalButton: {
+    flex: 1,
+    padding: 15,
+    borderRadius: 8,
+    alignItems: "center",
+  },
+  cancelButton: {
+    backgroundColor: "rgba(255,255,255,0.1)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.2)",
+  },
+  deleteButton: {
+    backgroundColor: "#ff3b30",
+  },
+  modalButtonText: {
+    color: COLORS.text,
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  deleteButtonText: {
+    color: "#ffffff",
+  },
+  addButton: {
+    padding: 5,
   },
 });
 
