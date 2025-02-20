@@ -2,32 +2,38 @@
 import React, { createContext, useState, useEffect } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-const WorkoutContext = createContext();
+export const WorkoutContext = createContext();
 
 export const WorkoutProvider = ({ children }) => {
   const [workouts, setWorkouts] = useState([]);
-  const [trackedSessions, setTrackedSessions] = useState([]);
+  const [progressData, setProgressData] = useState({});
+  const [trainingHistory, setTrainingHistory] = useState([]);
 
-  // Load saved data on app start
   useEffect(() => {
-    loadSavedData();
+    loadWorkouts();
+    loadProgress();
+    loadTrainingHistory();
   }, []);
 
-  const loadSavedData = async () => {
+  const loadWorkouts = async () => {
     try {
       const savedWorkouts = await AsyncStorage.getItem("workouts");
-      const savedSessions = await AsyncStorage.getItem("sessions");
-
-      if (savedWorkouts) setWorkouts(JSON.parse(savedWorkouts));
-      if (savedSessions) setTrackedSessions(JSON.parse(savedSessions));
+      if (savedWorkouts) {
+        setWorkouts(JSON.parse(savedWorkouts));
+      }
     } catch (error) {
-      console.error("Error loading data:", error);
+      console.error("Error loading workouts:", error);
     }
   };
 
-  const saveWorkout = async (newWorkout) => {
+  const saveWorkout = async (workout) => {
     try {
-      const updatedWorkouts = [...workouts, newWorkout];
+      const updatedWorkouts = workouts.map((w) =>
+        w.name === workout.name ? workout : w
+      );
+      if (!workouts.find((w) => w.name === workout.name)) {
+        updatedWorkouts.push(workout);
+      }
       setWorkouts(updatedWorkouts);
       await AsyncStorage.setItem("workouts", JSON.stringify(updatedWorkouts));
     } catch (error) {
@@ -35,28 +41,85 @@ export const WorkoutProvider = ({ children }) => {
     }
   };
 
-  const trackSession = async (session) => {
-    const updatedSessions = [...trackedSessions, session];
-    setTrackedSessions(updatedSessions);
-    await AsyncStorage.setItem("sessions", JSON.stringify(updatedSessions));
+  const deleteWorkout = async (workoutToDelete) => {
+    try {
+      const updatedWorkouts = workouts.filter(
+        (w) => w.name !== workoutToDelete.name
+      );
+      setWorkouts(updatedWorkouts);
+      await AsyncStorage.setItem("workouts", JSON.stringify(updatedWorkouts));
+    } catch (error) {
+      console.error("Error deleting workout:", error);
+    }
   };
 
-  const getProgressForExercise = (exerciseName) => {
-    return trackedSessions
-      .filter((session) =>
-        session.exercises.some((ex) => ex.name === exerciseName)
-      )
-      .map((session) => ({
-        date: session.date,
-        maxWeight: Math.max(
-          ...session.exercises
-            .find((ex) => ex.name === exerciseName)
-            .sets.map((set) => set.weight)
-        ),
-        totalVolume: session.exercises
-          .find((ex) => ex.name === exerciseName)
-          .sets.reduce((acc, set) => acc + set.weight * set.reps, 0),
-      }));
+  const loadProgress = async () => {
+    try {
+      const savedProgress = await AsyncStorage.getItem("progress");
+      if (savedProgress) {
+        setProgressData(JSON.parse(savedProgress));
+      }
+    } catch (error) {
+      console.error("Error loading progress:", error);
+    }
+  };
+
+  const saveProgress = async (exerciseRecord) => {
+    try {
+      const updatedProgress = {
+        ...progressData,
+        [Date.now()]: exerciseRecord,
+      };
+      setProgressData(updatedProgress);
+      await AsyncStorage.setItem("progress", JSON.stringify(updatedProgress));
+      return true;
+    } catch (error) {
+      console.error("Error saving progress:", error);
+      return false;
+    }
+  };
+
+  const loadTrainingHistory = async () => {
+    try {
+      const savedHistory = await AsyncStorage.getItem("trainingHistory");
+      if (savedHistory) {
+        setTrainingHistory(JSON.parse(savedHistory));
+      }
+    } catch (error) {
+      console.error("Error loading training history:", error);
+    }
+  };
+
+  const saveTrainingSession = async (exerciseData) => {
+    try {
+      const updatedHistory = [...trainingHistory, exerciseData];
+      setTrainingHistory(updatedHistory);
+      await AsyncStorage.setItem(
+        "trainingHistory",
+        JSON.stringify(updatedHistory)
+      );
+      return true;
+    } catch (error) {
+      console.error("Error saving training session:", error);
+      return false;
+    }
+  };
+
+  const deleteTrainingSession = async (sessionDate) => {
+    try {
+      const updatedHistory = trainingHistory.filter(
+        (session) => session.date !== sessionDate
+      );
+      setTrainingHistory(updatedHistory);
+      await AsyncStorage.setItem(
+        "trainingHistory",
+        JSON.stringify(updatedHistory)
+      );
+      return true;
+    } catch (error) {
+      console.error("Error deleting training session:", error);
+      return false;
+    }
   };
 
   return (
@@ -64,9 +127,12 @@ export const WorkoutProvider = ({ children }) => {
       value={{
         workouts,
         saveWorkout,
-        trackedSessions,
-        trackSession,
-        getProgressForExercise,
+        deleteWorkout,
+        progressData,
+        saveProgress,
+        trainingHistory,
+        saveTrainingSession,
+        deleteTrainingSession,
       }}
     >
       {children}
