@@ -21,29 +21,22 @@ const screenOptions = {
   cardStyle: { backgroundColor: "#000000" },
   cardStyleInterpolator: ({ current }) => ({
     cardStyle: {
-      opacity: current.progress.interpolate({
-        inputRange: [0, 1],
-        outputRange: [0, 1],
-      }),
-    },
-    overlayStyle: {
-      opacity: current.progress.interpolate({
-        inputRange: [0, 1],
-        outputRange: [0, 0.5],
-      }),
+      opacity: current.progress,
     },
   }),
   transitionSpec: {
     open: {
       animation: "timing",
       config: {
-        duration: 200,
+        duration: 300,
+        useNativeDriver: true,
       },
     },
     close: {
       animation: "timing",
       config: {
-        duration: 200,
+        duration: 300,
+        useNativeDriver: true,
       },
     },
   },
@@ -53,53 +46,55 @@ export default function App() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    setTimeout(() => {
+    const timer = setTimeout(() => {
       setIsLoading(false);
-    }, 2000);
-  }, []);
+    }, 2500);
 
-  if (isLoading) {
-    return <LoadingScreen />;
-  }
+    return () => clearTimeout(timer);
+  }, []);
 
   return (
     <WorkoutProvider>
       <NavigationContainer>
         <StatusBar barStyle="light-content" backgroundColor="#000000" />
-        <Stack.Navigator screenOptions={screenOptions}>
-          <Stack.Screen
-            name="Home"
-            component={HomeScreen}
-            options={{ title: "Workout Tracker" }}
-          />
-          <Stack.Screen
-            name="PlanWorkout"
-            component={WorkoutPlanner}
-            options={{ title: "Create Workout" }}
-          />
-          <Stack.Screen
-            name="TrackWorkout"
-            component={ExerciseTracker}
-            options={{ title: "Track Workout" }}
-          />
-          <Stack.Screen
-            name="History"
-            component={HistoryScreen}
-            options={{ title: "Progress History" }}
-          />
-          <Stack.Screen
-            name="ManageWorkouts"
-            component={ManageWorkouts}
-            options={{ title: "Manage Workouts" }}
-          />
-          <Stack.Screen name="ExerciseList" component={ExerciseList} />
-          <Stack.Screen name="EditWorkout" component={EditWorkout} />
-          <Stack.Screen
-            name="Progress"
-            component={ProgressScreen}
-            options={{ title: "Check Progress" }}
-          />
-        </Stack.Navigator>
+        {isLoading ? (
+          <LoadingScreen />
+        ) : (
+          <Stack.Navigator screenOptions={screenOptions}>
+            <Stack.Screen
+              name="Home"
+              component={HomeScreen}
+              options={{ title: "Workout Tracker" }}
+            />
+            <Stack.Screen
+              name="PlanWorkout"
+              component={WorkoutPlanner}
+              options={{ title: "Create Workout" }}
+            />
+            <Stack.Screen
+              name="TrackWorkout"
+              component={ExerciseTracker}
+              options={{ title: "Track Workout" }}
+            />
+            <Stack.Screen
+              name="History"
+              component={HistoryScreen}
+              options={{ title: "Progress History" }}
+            />
+            <Stack.Screen
+              name="ManageWorkouts"
+              component={ManageWorkouts}
+              options={{ title: "Manage Workouts" }}
+            />
+            <Stack.Screen name="ExerciseList" component={ExerciseList} />
+            <Stack.Screen name="EditWorkout" component={EditWorkout} />
+            <Stack.Screen
+              name="Progress"
+              component={ProgressScreen}
+              options={{ title: "Check Progress" }}
+            />
+          </Stack.Navigator>
+        )}
       </NavigationContainer>
     </WorkoutProvider>
   );
