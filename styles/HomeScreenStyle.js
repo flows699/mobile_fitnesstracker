@@ -1,4 +1,4 @@
-import { StyleSheet, Platform } from 'react-native';
+import { StyleSheet, Platform } from "react-native";
 
 export const COLORS = {
   gradient1: "#000000",
@@ -9,6 +9,7 @@ export const COLORS = {
   text: "#ffffff",
   accent: "#ff0000",
   shadow: "#000000",
+  accent_rgb: "129, 236, 236", // RGB values for the accent color
 };
 
 export default StyleSheet.create({
