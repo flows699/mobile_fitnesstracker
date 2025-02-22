@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   FlatList,
   Modal,
+  Alert,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
@@ -14,7 +15,7 @@ import { COLORS } from "../styles/HomeScreenStyle";
 import { WorkoutContext } from "../context/WorkoutContext";
 
 const HistoryScreen = ({ navigation }) => {
-  const { trainingHistory = [], deleteTrainingSession } =
+  const { trainingHistory, deleteTrainingSession, clearAllData } =
     useContext(WorkoutContext);
   const [deleteModal, setDeleteModal] = useState(false);
   const [sessionToDelete, setSessionToDelete] = useState(null);
@@ -30,6 +31,26 @@ const HistoryScreen = ({ navigation }) => {
       setDeleteModal(false);
       setSessionToDelete(null);
     }
+  };
+
+  const handleClearAll = () => {
+    Alert.alert(
+      "Clear All Data",
+      "This will delete all workout history and progress data. This action cannot be undone.",
+      [
+        {
+          text: "Cancel",
+          style: "cancel",
+        },
+        {
+          text: "Clear All",
+          style: "destructive",
+          onPress: async () => {
+            await clearAllData();
+          },
+        },
+      ]
+    );
   };
 
   const renderWorkoutSession = ({ item }) => (
@@ -78,8 +99,40 @@ const HistoryScreen = ({ navigation }) => {
                 color={COLORS.text}
               />
             </TouchableOpacity>
-            <Text style={styles.title}>Workout History</Text>
+            <Text style={styles.title}>History</Text>
           </View>
+
+          {/* Add Progress Charts Button */}
+          <TouchableOpacity
+            style={styles.chartsButton}
+            onPress={() => navigation.navigate("Progress")}
+          >
+            <MaterialCommunityIcons
+              name="chart-line"
+              size={24}
+              color={COLORS.text}
+            />
+            <Text style={styles.chartsButtonText}>View Progress Charts</Text>
+          </TouchableOpacity>
+
+          {sortedHistory.length > 0 && (
+            <TouchableOpacity
+              style={[
+                styles.chartsButton,
+                { backgroundColor: "#ff3b30", marginBottom: 10 },
+              ]}
+              onPress={handleClearAll}
+            >
+              <MaterialCommunityIcons
+                name="delete-sweep"
+                size={24}
+                color={COLORS.text}
+              />
+              <Text style={styles.chartsButtonText}>Clear All Data</Text>
+            </TouchableOpacity>
+          )}
+
+          {/* Remove debug clear button */}
 
           {!sortedHistory || sortedHistory.length === 0 ? (
             <View style={styles.emptyContainer}>
@@ -278,6 +331,21 @@ const styles = StyleSheet.create({
   },
   deleteButtonText: {
     color: "#ffffff",
+  },
+  chartsButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: COLORS.accent,
+    padding: 15,
+    borderRadius: 10,
+    marginBottom: 20,
+    justifyContent: "center",
+  },
+  chartsButtonText: {
+    color: COLORS.text,
+    fontSize: 16,
+    fontWeight: "600",
+    marginLeft: 10,
   },
 });
 
