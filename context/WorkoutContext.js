@@ -92,12 +92,52 @@ export const WorkoutProvider = ({ children }) => {
 
   const saveTrainingSession = async (exerciseData) => {
     try {
+      console.log("Saving training session:", exerciseData); // Debug log
+
+      // Handle single exercise tracking
+      if (!exerciseData.exercises) {
+        const timestamp = Date.now().toString();
+        const updatedProgress = {
+          ...progressData,
+          [timestamp]: {
+            name: exerciseData.name,
+            sets: exerciseData.sets,
+            date: exerciseData.date,
+            isWorkout: false,
+          },
+        };
+
+        setProgressData(updatedProgress);
+        await AsyncStorage.setItem("progress", JSON.stringify(updatedProgress));
+        return true;
+      }
+
+      // Handle complete workout session
       const updatedHistory = [...trainingHistory, exerciseData];
       setTrainingHistory(updatedHistory);
       await AsyncStorage.setItem(
         "trainingHistory",
         JSON.stringify(updatedHistory)
       );
+
+      // Save to progress if it's a workout
+      if (exerciseData.workoutName && exerciseData.exercises) {
+        const updatedProgress = { ...progressData };
+        exerciseData.exercises.forEach((exercise) => {
+          const timestamp = Date.now().toString();
+          updatedProgress[timestamp] = {
+            name: exercise.name,
+            sets: exercise.sets,
+            date: exerciseData.date,
+            isWorkout: true,
+            workoutName: exerciseData.workoutName,
+          };
+        });
+
+        setProgressData(updatedProgress);
+        await AsyncStorage.setItem("progress", JSON.stringify(updatedProgress));
+      }
+
       return true;
     } catch (error) {
       console.error("Error saving training session:", error);
@@ -107,18 +147,50 @@ export const WorkoutProvider = ({ children }) => {
 
   const deleteTrainingSession = async (sessionDate) => {
     try {
+      // Find the session that's being deleted
+      const sessionToDelete = trainingHistory.find(
+        (session) => session.date === sessionDate
+      );
+
+      if (!sessionToDelete) return false;
+
+      // Remove from training history
       const updatedHistory = trainingHistory.filter(
         (session) => session.date !== sessionDate
       );
-      setTrainingHistory(updatedHistory);
       await AsyncStorage.setItem(
         "trainingHistory",
         JSON.stringify(updatedHistory)
       );
+      setTrainingHistory(updatedHistory);
+
+      // Remove from progress data
+      const updatedProgress = { ...progressData };
+      Object.keys(updatedProgress).forEach((key) => {
+        if (updatedProgress[key].date === sessionDate) {
+          delete updatedProgress[key];
+        }
+      });
+
+      await AsyncStorage.setItem("progress", JSON.stringify(updatedProgress));
+      setProgressData(updatedProgress);
+
       return true;
     } catch (error) {
       console.error("Error deleting training session:", error);
       return false;
+    }
+  };
+
+  // Add a new utility function to clear all data
+  const clearAllData = async () => {
+    try {
+      await AsyncStorage.clear();
+      setTrainingHistory([]);
+      setProgressData({});
+      setWorkouts([]);
+    } catch (error) {
+      console.error("Error clearing data:", error);
     }
   };
 
@@ -133,6 +205,8 @@ export const WorkoutProvider = ({ children }) => {
         trainingHistory,
         saveTrainingSession,
         deleteTrainingSession,
+        clearAllData,
+        setProgressData,
       }}
     >
       {children}
