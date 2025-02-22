@@ -1,12 +1,10 @@
-import { bodyParts, exerciseDatabase } from "../data/exerciseDatabase";
+import { exerciseDatabase } from "../data/exerciseDatabase";
 
 export const getExercisesByBodyPart = async (bodyPart) => {
   // Simulate API delay for smooth UI
   await new Promise((resolve) => setTimeout(resolve, 300));
   return exerciseDatabase[bodyPart] || [];
 };
-
-export { bodyParts };
 
 const BASE_URL = "https://wger.de/api/v2";
 
@@ -23,30 +21,6 @@ export const getExerciseDetails = async (id) => {
   } catch (error) {
     console.error("Error fetching exercise details:", error);
     return null;
-  }
-};
-
-const EXERCISEDB_API_KEY = "YOUR_API_KEY_HERE"; // Get from https://rapidapi.com/justin-WFnsXH_t6/api/exercisedb
-
-export const fetchMuscleImages = async () => {
-  const options = {
-    method: "GET",
-    headers: {
-      "X-RapidAPI-Key": EXERCISEDB_API_KEY,
-      "X-RapidAPI-Host": "exercisedb.p.rapidapi.com",
-    },
-  };
-
-  try {
-    const response = await fetch(
-      "https://exercisedb.p.rapidapi.com/exercises",
-      options
-    );
-    const data = await response.json();
-    return data;
-  } catch (error) {
-    console.error("Error fetching exercises:", error);
-    return [];
   }
 };
 
