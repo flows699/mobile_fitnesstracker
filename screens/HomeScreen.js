@@ -86,6 +86,11 @@ const ActionButton = ({ title, onPress, iconName }) => (
 );
 
 const HomeScreen = ({ navigation }) => {
+  const startWorkout = () => {
+    // Navigate to ManageWorkouts instead of directly to TrackWorkout
+    navigation.navigate("ManageWorkouts");
+  };
+
   return (
     <View style={styles.outerContainer}>
       <LinearGradient
