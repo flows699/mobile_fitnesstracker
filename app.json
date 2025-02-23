@@ -13,14 +13,16 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "buildNumber": "1"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.anonymous.workouts"
+      "package": "com.anonymous.workouts",
+      "versionCode": 1
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -29,6 +31,9 @@
       "eas": {
         "projectId": "fa833d9f-c625-411b-89d7-e717f24206d5"
       }
+    },
+    "cli": {
+      "appVersionSource": "remote"
     }
   }
 }
