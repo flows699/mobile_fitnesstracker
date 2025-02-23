@@ -1,4 +1,4 @@
-import React, { useState, useContext, useRef } from "react";
+import React, { useState, useContext, useRef, useEffect } from "react";
 import {
   View,
   Text,
@@ -11,6 +11,8 @@ import {
   KeyboardAvoidingView,
   Platform,
   Keyboard,
+  Alert,
+  Modal,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
@@ -18,13 +20,29 @@ import { COLORS } from "../styles/HomeScreenStyle";
 import { WorkoutContext } from "../context/WorkoutContext";
 
 const ExerciseTracker = ({ navigation }) => {
-  const { workouts, saveTrainingSession } = useContext(WorkoutContext);
+  const {
+    workouts,
+    saveTrainingSession,
+    activeWorkout,
+    saveActiveWorkout,
+    clearActiveWorkout,
+  } = useContext(WorkoutContext);
   const [selectedWorkout, setSelectedWorkout] = useState(null);
   const [exerciseData, setExerciseData] = useState({});
   const [notification, setNotification] = useState(false);
   const [notificationText, setNotificationText] = useState("");
   const [notificationIsError, setNotificationIsError] = useState(false);
   const notificationOpacity = useRef(new Animated.Value(0)).current;
+  const [showExitModal, setShowExitModal] = useState(false);
+
+  useEffect(() => {
+    // Check for active workout when component mounts
+    if (activeWorkout) {
+      setSelectedWorkout(activeWorkout.workout);
+      setExerciseData(activeWorkout.exerciseData);
+      showNotification("Resumed previous workout", false);
+    }
+  }, []);
 
   const showNotification = (message, isError = false) => {
     setNotificationText(message);
@@ -48,16 +66,22 @@ const ExerciseTracker = ({ navigation }) => {
   };
 
   const handleSetComplete = (exerciseIndex, setIndex, weight, reps) => {
-    setExerciseData((prev) => ({
-      ...prev,
+    const updatedData = {
+      ...exerciseData,
       [exerciseIndex]: {
-        ...prev[exerciseIndex],
+        ...exerciseData[exerciseIndex],
         sets: {
-          ...prev[exerciseIndex]?.sets,
+          ...exerciseData[exerciseIndex]?.sets,
           [setIndex]: { weight, reps, completed: true },
         },
       },
-    }));
+    };
+    setExerciseData(updatedData);
+
+    // Save progress
+    if (selectedWorkout) {
+      saveActiveWorkout(selectedWorkout, updatedData);
+    }
   };
 
   const handleSaveExercise = async (exercise, index) => {
@@ -167,12 +191,24 @@ const ExerciseTracker = ({ navigation }) => {
     const success = await saveTrainingSession(workoutSession);
 
     if (success) {
+      await clearActiveWorkout();
       showNotification("Workout completed!");
       setTimeout(() => {
-        navigation.navigate("History");
+        navigation.reset({
+          index: 0,
+          routes: [{ name: "Home" }, { name: "History" }],
+        });
       }, 1500);
     } else {
       showNotification("Error saving workout", true);
+    }
+  };
+
+  const handleBack = () => {
+    if (exerciseData && Object.keys(exerciseData).length > 0) {
+      setShowExitModal(true);
+    } else {
+      navigation.goBack();
     }
   };
 
@@ -253,7 +289,7 @@ const ExerciseTracker = ({ navigation }) => {
         >
           <SafeAreaView style={styles.safeArea}>
             <View style={styles.header}>
-              <TouchableOpacity onPress={() => navigation.goBack()}>
+              <TouchableOpacity onPress={handleBack}>
                 <MaterialCommunityIcons
                   name="arrow-left"
                   size={30}
@@ -322,7 +358,7 @@ const ExerciseTracker = ({ navigation }) => {
               </Animated.View>
             )}
             <View style={styles.header}>
-              <TouchableOpacity onPress={() => setSelectedWorkout(null)}>
+              <TouchableOpacity onPress={handleBack}>
                 <MaterialCommunityIcons
                   name="arrow-left"
                   size={30}
@@ -354,6 +390,49 @@ const ExerciseTracker = ({ navigation }) => {
             </TouchableOpacity>
           </SafeAreaView>
         </KeyboardAvoidingView>
+
+        {/* Add Exit Modal */}
+        <Modal
+          visible={showExitModal}
+          transparent={true}
+          animationType="fade"
+          onRequestClose={() => setShowExitModal(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <MaterialCommunityIcons
+                name="alert-circle-outline"
+                size={50}
+                color={COLORS.accent}
+              />
+              <Text style={styles.modalTitle}>Unfinished Workout</Text>
+              <Text style={styles.modalText}>
+                Your progress will be saved and you can continue later.
+              </Text>
+              <View style={styles.modalButtons}>
+                <TouchableOpacity
+                  style={[styles.modalButton, styles.stayButton]}
+                  onPress={() => setShowExitModal(false)}
+                >
+                  <Text style={styles.modalButtonText}>Stay</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.modalButton, styles.leaveButton]}
+                  onPress={() => {
+                    saveActiveWorkout(selectedWorkout, exerciseData);
+                    navigation.goBack();
+                  }}
+                >
+                  <Text
+                    style={[styles.modalButtonText, styles.leaveButtonText]}
+                  >
+                    Leave
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
       </LinearGradient>
     </View>
   );
@@ -521,6 +600,60 @@ const styles = StyleSheet.create({
   listContent: {
     flexGrow: 1,
     paddingBottom: 100, // Increased padding to ensure space for keyboard
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.7)",
+    justifyContent: "center",
+    padding: 20,
+  },
+  modalContent: {
+    backgroundColor: COLORS.gradient1,
+    borderRadius: 15,
+    padding: 20,
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.1)",
+  },
+  modalTitle: {
+    color: COLORS.text,
+    fontSize: 24,
+    fontWeight: "bold",
+    marginVertical: 15,
+  },
+  modalText: {
+    color: "rgba(255,255,255,0.8)",
+    fontSize: 16,
+    textAlign: "center",
+    marginBottom: 20,
+  },
+  modalButtons: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    width: "100%",
+    gap: 10,
+  },
+  modalButton: {
+    flex: 1,
+    padding: 15,
+    borderRadius: 8,
+    alignItems: "center",
+  },
+  stayButton: {
+    backgroundColor: "rgba(255,255,255,0.1)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.2)",
+  },
+  leaveButton: {
+    backgroundColor: "#ff3b30",
+  },
+  modalButtonText: {
+    color: COLORS.text,
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  leaveButtonText: {
+    color: "#ffffff",
   },
 });
 

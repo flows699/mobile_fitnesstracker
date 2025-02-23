@@ -1,4 +1,4 @@
-import React, { useContext, useState } from "react";
+import React, { useContext, useState, useRef } from "react";
 import {
   View,
   Text,
@@ -8,6 +8,7 @@ import {
   FlatList,
   Modal,
   TextInput,
+  Animated,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
@@ -15,12 +16,36 @@ import { COLORS } from "../styles/HomeScreenStyle";
 import { WorkoutContext } from "../context/WorkoutContext";
 
 const EditWorkout = ({ route, navigation }) => {
-  const { workout } = route.params;
+  const { workout: initialWorkout } = route.params;
   const { saveWorkout } = useContext(WorkoutContext);
+  const [workout, setWorkout] = useState(initialWorkout);
   const [editingExercise, setEditingExercise] = useState(null);
   const [editModal, setEditModal] = useState(false);
   const [tempSets, setTempSets] = useState("");
   const [tempReps, setTempReps] = useState("");
+  const [notification, setNotification] = useState(false);
+  const [notificationText, setNotificationText] = useState("");
+  const notificationOpacity = useRef(new Animated.Value(0)).current;
+
+  const showNotification = (message) => {
+    setNotificationText(message);
+    setNotification(true);
+    notificationOpacity.setValue(0);
+
+    Animated.sequence([
+      Animated.timing(notificationOpacity, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+      Animated.delay(2000),
+      Animated.timing(notificationOpacity, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+    ]).start(() => setNotification(false));
+  };
 
   const handleDeleteExercise = (exerciseToDelete) => {
     const updatedWorkout = {
@@ -29,7 +54,10 @@ const EditWorkout = ({ route, navigation }) => {
         (ex) => ex.name !== exerciseToDelete.name
       ),
     };
+
+    setWorkout(updatedWorkout);
     saveWorkout(updatedWorkout);
+    showNotification(`Removed ${exerciseToDelete.name}`);
   };
 
   const handleEditExercise = (exercise) => {
@@ -101,6 +129,31 @@ const EditWorkout = ({ route, navigation }) => {
         style={styles.background}
       >
         <SafeAreaView style={styles.safeArea}>
+          {notification && (
+            <Animated.View
+              style={[
+                styles.notification,
+                {
+                  opacity: notificationOpacity,
+                  transform: [
+                    {
+                      translateY: notificationOpacity.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: [-20, 0],
+                      }),
+                    },
+                  ],
+                },
+              ]}
+            >
+              <MaterialCommunityIcons
+                name="check-circle"
+                size={20}
+                color={COLORS.text}
+              />
+              <Text style={styles.notificationText}>{notificationText}</Text>
+            </Animated.View>
+          )}
           <View style={styles.header}>
             <TouchableOpacity onPress={() => navigation.goBack()}>
               <MaterialCommunityIcons
@@ -331,6 +384,29 @@ const styles = StyleSheet.create({
     color: COLORS.text,
     fontSize: 16,
     fontWeight: "600",
+  },
+  notification: {
+    position: "absolute",
+    top: 40,
+    left: 20,
+    right: 20,
+    backgroundColor: COLORS.accent,
+    borderRadius: 8,
+    padding: 15,
+    flexDirection: "row",
+    alignItems: "center",
+    zIndex: 100,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  notificationText: {
+    color: COLORS.text,
+    marginLeft: 10,
+    fontSize: 16,
+    fontWeight: "500",
   },
 });
 
