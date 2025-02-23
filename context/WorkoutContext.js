@@ -8,11 +8,13 @@ export const WorkoutProvider = ({ children }) => {
   const [workouts, setWorkouts] = useState([]);
   const [progressData, setProgressData] = useState({});
   const [trainingHistory, setTrainingHistory] = useState([]);
+  const [activeWorkout, setActiveWorkout] = useState(null);
 
   useEffect(() => {
     loadWorkouts();
     loadProgress();
     loadTrainingHistory();
+    loadActiveWorkout();
   }, []);
 
   const loadWorkouts = async () => {
@@ -194,6 +196,43 @@ export const WorkoutProvider = ({ children }) => {
     }
   };
 
+  const loadActiveWorkout = async () => {
+    try {
+      const savedWorkout = await AsyncStorage.getItem("activeWorkout");
+      if (savedWorkout) {
+        setActiveWorkout(JSON.parse(savedWorkout));
+      }
+    } catch (error) {
+      console.error("Error loading active workout:", error);
+    }
+  };
+
+  const saveActiveWorkout = async (workout, exerciseData) => {
+    try {
+      const activeWorkoutData = {
+        workout,
+        exerciseData,
+        timestamp: Date.now(),
+      };
+      await AsyncStorage.setItem(
+        "activeWorkout",
+        JSON.stringify(activeWorkoutData)
+      );
+      setActiveWorkout(activeWorkoutData);
+    } catch (error) {
+      console.error("Error saving active workout:", error);
+    }
+  };
+
+  const clearActiveWorkout = async () => {
+    try {
+      await AsyncStorage.removeItem("activeWorkout");
+      setActiveWorkout(null);
+    } catch (error) {
+      console.error("Error clearing active workout:", error);
+    }
+  };
+
   return (
     <WorkoutContext.Provider
       value={{
@@ -207,6 +246,9 @@ export const WorkoutProvider = ({ children }) => {
         deleteTrainingSession,
         clearAllData,
         setProgressData,
+        activeWorkout,
+        saveActiveWorkout,
+        clearActiveWorkout,
       }}
     >
       {children}
