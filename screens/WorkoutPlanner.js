@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -6,17 +6,37 @@ import {
   TouchableOpacity,
   Dimensions,
   SafeAreaView,
-  Image, // Change this line
+  Image,
+  ActivityIndicator,
+  ScrollView,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { COLORS } from "../styles/HomeScreenStyle";
-import { muscleGroups } from "../services/muscleData";
+import { fetchMuscles } from "../services/exerciseAPI";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 
 const { width } = Dimensions.get("window");
 const boxWidth = (width - 60) / 2; // 60 = padding (20) * 3
 
 const WorkoutPlanner = ({ navigation }) => {
+  const [muscles, setMuscles] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    loadMuscles();
+  }, []);
+
+  const loadMuscles = async () => {
+    try {
+      const data = await fetchMuscles();
+      setMuscles(data);
+    } catch (error) {
+      console.error("Error loading muscles:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleMuscleGroupPress = (muscleGroup) => {
     navigation.navigate("ExerciseList", { muscleGroup });
   };
@@ -38,24 +58,31 @@ const WorkoutPlanner = ({ navigation }) => {
             </TouchableOpacity>
             <Text style={styles.title}>WORKOUT{"\n"}PLANNER</Text>
           </View>
-          <View style={styles.gridContainer}>
-            {muscleGroups.map((muscle) => (
-              <TouchableOpacity
-                key={muscle.id}
-                style={styles.box}
-                onPress={() => handleMuscleGroupPress(muscle)}
-              >
-                <View style={styles.iconContainer}>
-                  <MaterialCommunityIcons
-                    name={muscle.icon}
-                    size={boxWidth * 0.4}
-                    color={COLORS.accent}
-                  />
-                </View>
-                <Text style={styles.muscleName}>{muscle.name}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
+          {loading ? (
+            <ActivityIndicator size="large" color={COLORS.accent} />
+          ) : (
+            <ScrollView
+              contentContainerStyle={styles.gridContainer}
+              showsVerticalScrollIndicator={false}
+            >
+              {muscles.map((muscle) => (
+                <TouchableOpacity
+                  key={muscle.id}
+                  style={styles.box}
+                  onPress={() => handleMuscleGroupPress(muscle)}
+                >
+                  <View style={styles.iconContainer}>
+                    <MaterialCommunityIcons
+                      name={muscle.icon}
+                      size={boxWidth * 0.4}
+                      color={COLORS.accent}
+                    />
+                  </View>
+                  <Text style={styles.muscleName}>{muscle.name}</Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          )}
         </SafeAreaView>
       </LinearGradient>
     </View>
@@ -93,6 +120,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     flexWrap: "wrap",
     justifyContent: "space-between",
+    paddingBottom: 20, // Add padding at bottom for better scrolling
   },
   box: {
     width: boxWidth,
