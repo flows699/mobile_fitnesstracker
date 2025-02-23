@@ -90,37 +90,22 @@ export const WorkoutProvider = ({ children }) => {
 
   const saveTrainingSession = async (exerciseData) => {
     try {
-      console.log("Saving training session:", exerciseData); // Debug log
-
-      // Handle single exercise tracking
-      if (!exerciseData.exercises) {
-        const timestamp = Date.now().toString();
-        const updatedProgress = {
-          ...progressData,
-          [timestamp]: {
-            name: exerciseData.name,
-            sets: exerciseData.sets,
-            date: exerciseData.date,
-            isWorkout: false,
-          },
-        };
-
-        setProgressData(updatedProgress);
-        await storageService.saveData("PROGRESS", updatedProgress);
-        return true;
-      }
+      console.log("Saving training session:", exerciseData);
 
       // Handle complete workout session
       const updatedHistory = [...trainingHistory, exerciseData];
       setTrainingHistory(updatedHistory);
       await storageService.saveData("TRAINING_HISTORY", updatedHistory);
 
-      // Save to progress if it's a workout
-      if (exerciseData.workoutName && exerciseData.exercises) {
+      // Save each exercise's progress separately
+      if (exerciseData.exercises) {
+        const timestamp = Date.now();
         const updatedProgress = { ...progressData };
-        exerciseData.exercises.forEach((exercise) => {
-          const timestamp = Date.now().toString();
-          updatedProgress[timestamp] = {
+
+        exerciseData.exercises.forEach((exercise, index) => {
+          // Use unique timestamp for each exercise to prevent overwriting
+          const exerciseTimestamp = timestamp + index;
+          updatedProgress[exerciseTimestamp] = {
             name: exercise.name,
             sets: exercise.sets,
             date: exerciseData.date,
@@ -129,6 +114,7 @@ export const WorkoutProvider = ({ children }) => {
           };
         });
 
+        console.log("Saving progress data:", updatedProgress);
         setProgressData(updatedProgress);
         await storageService.saveData("PROGRESS", updatedProgress);
       }
