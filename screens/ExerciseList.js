@@ -52,6 +52,7 @@ const ExerciseList = ({ route, navigation }) => {
   };
 
   const handleAddExercise = (exercise) => {
+    // Remove the global duplicate check
     setSelectedExercise(exercise);
     setShowWorkoutModal(true);
   };
@@ -79,6 +80,16 @@ const ExerciseList = ({ route, navigation }) => {
   };
 
   const handleSaveToWorkout = (workout) => {
+    // Only check for duplicates within the selected workout
+    if (workout.exercises.some((ex) => ex.name === selectedExercise.name)) {
+      showNotification(
+        `${selectedExercise.name} already exists in ${workout.name}`
+      );
+      setShowWorkoutModal(false);
+      setSelectedExercise(null);
+      return;
+    }
+
     const updatedWorkout = {
       ...workout,
       exercises: [
