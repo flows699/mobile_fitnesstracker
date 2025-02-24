@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -12,49 +12,6 @@ import {
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import baseStyles, { COLORS } from "../styles/HomeScreenStyle";
-
-const Pattern = () => (
-  <View style={baseStyles.pattern}>
-    {Array(6)
-      .fill(null)
-      .map((_, i) => (
-        <View key={i} style={baseStyles.patternRow}>
-          {Array(6)
-            .fill(null)
-            .map((_, j) => (
-              <View key={j} style={baseStyles.patternDot} />
-            ))}
-        </View>
-      ))}
-  </View>
-);
-
-const AnimatedShape = ({ style }) => {
-  const translateY = new Animated.Value(0);
-
-  useEffect(() => {
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(translateY, {
-          toValue: 20,
-          duration: 2000,
-          useNativeDriver: true,
-        }),
-        Animated.timing(translateY, {
-          toValue: 0,
-          duration: 2000,
-          useNativeDriver: true,
-        }),
-      ])
-    ).start();
-  }, []);
-
-  return (
-    <Animated.View
-      style={[baseStyles.shape, style, { transform: [{ translateY }] }]}
-    />
-  );
-};
 
 const ActionButton = ({ title, onPress, iconName }) => (
   <TouchableOpacity
@@ -87,50 +44,123 @@ const ActionButton = ({ title, onPress, iconName }) => (
   </TouchableOpacity>
 );
 
-const HomeScreen = ({ navigation }) => {
-  const fadeAnim = React.useRef(new Animated.Value(0)).current;
-  const slideAnim = React.useRef(new Animated.Value(100)).current; // Reduced distance
+const ShootingStar = ({ style, duration = 1000 }) => {
+  const translateX = useRef(new Animated.Value(-50)).current;
+  const translateY = useRef(new Animated.Value(-50)).current;
+  const opacity = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    // Smoother animation configuration
+    Animated.loop(
+      Animated.sequence([
+        Animated.parallel([
+          Animated.timing(translateX, {
+            toValue: 250,
+            duration,
+            useNativeDriver: true,
+            easing: Easing.linear,
+          }),
+          Animated.timing(translateY, {
+            toValue: 250,
+            duration,
+            useNativeDriver: true,
+            easing: Easing.linear,
+          }),
+          Animated.sequence([
+            Animated.timing(opacity, {
+              toValue: 1,
+              duration: 100,
+              useNativeDriver: true,
+            }),
+            Animated.timing(opacity, {
+              toValue: 0,
+              duration: duration - 100,
+              useNativeDriver: true,
+            }),
+          ]),
+        ]),
+        Animated.delay(Math.random() * 500), // Random delay between loops
+      ])
+    ).start();
+  }, []);
+
+  return (
+    <Animated.View
+      style={[
+        styles.star,
+        style,
+        {
+          opacity,
+          transform: [{ translateX }, { translateY }, { rotate: "45deg" }],
+        },
+      ]}
+    />
+  );
+};
+
+const AnimatedBackground = () => {
+  // Generate multiple shooting stars with different positions and timings
+  const stars = Array(12)
+    .fill(null)
+    .map((_, i) => ({
+      id: i,
+      top: `${Math.random() * 70}%`,
+      left: `${Math.random() * 70}%`,
+      duration: 800 + Math.random() * 500,
+    }));
+
+  return (
+    <View style={styles.backgroundOverlay}>
+      <LinearGradient
+        colors={["rgba(255,255,255,0.05)", "transparent"]}
+        style={styles.topGlow}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 0, y: 1 }}
+      />
+      {stars.map((star) => (
+        <ShootingStar
+          key={star.id}
+          style={{ top: star.top, left: star.left }}
+          duration={star.duration}
+        />
+      ))}
+    </View>
+  );
+};
+
+const HomeScreen = ({ navigation }) => {
+  const fadeAnim = React.useRef(new Animated.Value(0)).current;
+  const slideAnim = React.useRef(new Animated.Value(100)).current;
+
+  useEffect(() => {
     Animated.parallel([
       Animated.timing(slideAnim, {
         toValue: 0,
-        duration: 600, // Increased duration
+        duration: 600,
         useNativeDriver: true,
-        easing: Easing.bezier(0.25, 0.1, 0.25, 1), // Custom easing curve
+        easing: Easing.bezier(0.25, 0.1, 0.25, 1),
       }),
       Animated.timing(fadeAnim, {
         toValue: 1,
-        duration: 600, // Matched duration
+        duration: 600,
         useNativeDriver: true,
-        easing: Easing.bezier(0.25, 0.1, 0.25, 1), // Same easing curve
+        easing: Easing.bezier(0.25, 0.1, 0.25, 1),
       }),
     ]).start();
   }, []);
 
-  const startWorkout = () => {
-    // Navigate to ManageWorkouts instead of directly to TrackWorkout
-    navigation.navigate("ManageWorkouts");
-  };
-
   return (
     <View style={baseStyles.outerContainer}>
       <LinearGradient
-        colors={[COLORS.gradient1, COLORS.gradient2, COLORS.gradient3]}
+        colors={[
+          COLORS.gradient1,
+          "rgba(16, 16, 35, 1)",
+          "rgba(22, 22, 45, 1)",
+        ]}
         style={baseStyles.background}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
       >
-        <AnimatedShape
-          style={[baseStyles.circle, { top: "10%", left: "10%" }]}
-        />
-        <AnimatedShape
-          style={[baseStyles.square, { top: "30%", right: "15%" }]}
-        />
-        <AnimatedShape
-          style={[baseStyles.triangle, { bottom: "20%", left: "20%" }]}
-        />
+        <AnimatedBackground />
 
         <SafeAreaView style={baseStyles.container}>
           <Animated.View
@@ -149,7 +179,7 @@ const HomeScreen = ({ navigation }) => {
 
             <View style={baseStyles.buttonGroup}>
               <ActionButton
-                title="SEARCH EXERCISES" // Changed from "CREATE WORKOUT"
+                title="SEARCH EXERCISES"
                 onPress={() => navigation.navigate("PlanWorkout")}
                 iconName="barbell-outline"
               />
@@ -175,5 +205,27 @@ const HomeScreen = ({ navigation }) => {
     </View>
   );
 };
+
+const styles = StyleSheet.create({
+  backgroundOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    overflow: "hidden",
+  },
+  topGlow: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 300,
+  },
+  star: {
+    position: "absolute",
+    width: 3,
+    height: 3,
+    backgroundColor: "#ffffff",
+    borderRadius: 1,
+    opacity: 0.8,
+  },
+});
 
 export default HomeScreen;
