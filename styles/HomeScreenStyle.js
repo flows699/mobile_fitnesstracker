@@ -146,4 +146,7 @@ export default StyleSheet.create({
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.3)",
   },
+  content: {
+    flex: 1,
+  },
 });
