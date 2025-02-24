@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { NavigationContainer } from "@react-navigation/native";
 import { createStackNavigator } from "@react-navigation/stack";
 import { WorkoutProvider } from "./context/WorkoutContext";
@@ -45,20 +45,16 @@ const screenOptions = {
 export default function App() {
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 2500);
-
-    return () => clearTimeout(timer);
-  }, []);
-
   return (
     <WorkoutProvider>
       <NavigationContainer>
-        <StatusBar barStyle="light-content" backgroundColor="#000000" />
+        <StatusBar
+          barStyle={isLoading ? "dark-content" : "light-content"}
+          backgroundColor={isLoading ? "#FFFFFF" : "#000000"}
+        />
+
         {isLoading ? (
-          <LoadingScreen />
+          <LoadingScreen onLoadingComplete={() => setIsLoading(false)} />
         ) : (
           <Stack.Navigator screenOptions={screenOptions}>
             <Stack.Screen
