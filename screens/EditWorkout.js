@@ -26,6 +26,10 @@ const EditWorkout = ({ route, navigation }) => {
   const [notification, setNotification] = useState(false);
   const [notificationText, setNotificationText] = useState("");
   const notificationOpacity = useRef(new Animated.Value(0)).current;
+  const [showAddManualModal, setShowAddManualModal] = useState(false);
+  const [newExerciseName, setNewExerciseName] = useState("");
+  const [newExerciseSets, setNewExerciseSets] = useState("3");
+  const [newExerciseReps, setNewExerciseReps] = useState("12");
 
   const showNotification = (message) => {
     setNotificationText(message);
@@ -87,6 +91,35 @@ const EditWorkout = ({ route, navigation }) => {
     saveWorkout(updatedWorkout);
     setEditModal(false);
     setEditingExercise(null);
+  };
+
+  const handleAddManualExercise = () => {
+    if (!newExerciseName.trim()) {
+      showNotification("Please enter an exercise name");
+      return;
+    }
+
+    const newExercise = {
+      name: newExerciseName.trim(),
+      sets: Array(parseInt(newExerciseSets)).fill({
+        weight: 0,
+        reps: parseInt(newExerciseReps),
+        completed: false,
+      }),
+    };
+
+    const updatedWorkout = {
+      ...workout,
+      exercises: [...workout.exercises, newExercise],
+    };
+
+    saveWorkout(updatedWorkout);
+    setWorkout(updatedWorkout);
+    setShowAddManualModal(false);
+    setNewExerciseName("");
+    setNewExerciseSets("3");
+    setNewExerciseReps("12");
+    showNotification(`Added ${newExerciseName}`);
   };
 
   const renderExercise = ({ item }) => (
@@ -182,6 +215,14 @@ const EditWorkout = ({ route, navigation }) => {
             }
           />
 
+          <TouchableOpacity
+            style={styles.addButton}
+            onPress={() => setShowAddManualModal(true)}
+          >
+            <MaterialCommunityIcons name="plus" size={24} color={COLORS.text} />
+            <Text style={styles.addButtonText}>Add Custom Exercise</Text>
+          </TouchableOpacity>
+
           <Modal
             visible={editModal}
             transparent={true}
@@ -232,6 +273,67 @@ const EditWorkout = ({ route, navigation }) => {
                     onPress={handleSaveExerciseEdit}
                   >
                     <Text style={styles.buttonText}>Save</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </View>
+          </Modal>
+
+          <Modal
+            visible={showAddManualModal}
+            transparent={true}
+            animationType="fade"
+            onRequestClose={() => setShowAddManualModal(false)}
+          >
+            <View style={styles.modalOverlay}>
+              <View style={styles.modalContent}>
+                <Text style={styles.modalTitle}>Add Custom Exercise</Text>
+
+                <TextInput
+                  style={styles.input}
+                  placeholder="Exercise Name"
+                  placeholderTextColor="rgba(255,255,255,0.5)"
+                  value={newExerciseName}
+                  onChangeText={setNewExerciseName}
+                />
+
+                <View style={styles.inputRow}>
+                  <View style={styles.inputGroup}>
+                    <Text style={styles.inputLabel}>Sets</Text>
+                    <TextInput
+                      style={styles.input}
+                      value={newExerciseSets}
+                      onChangeText={setNewExerciseSets}
+                      keyboardType="numeric"
+                      placeholder="3"
+                      placeholderTextColor="rgba(255,255,255,0.5)"
+                    />
+                  </View>
+                  <View style={styles.inputGroup}>
+                    <Text style={styles.inputLabel}>Reps</Text>
+                    <TextInput
+                      style={styles.input}
+                      value={newExerciseReps}
+                      onChangeText={setNewExerciseReps}
+                      keyboardType="numeric"
+                      placeholder="12"
+                      placeholderTextColor="rgba(255,255,255,0.5)"
+                    />
+                  </View>
+                </View>
+
+                <View style={styles.modalButtons}>
+                  <TouchableOpacity
+                    style={[styles.modalButton, styles.cancelButton]}
+                    onPress={() => setShowAddManualModal(false)}
+                  >
+                    <Text style={styles.buttonText}>Cancel</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.modalButton, styles.saveButton]}
+                    onPress={handleAddManualExercise}
+                  >
+                    <Text style={styles.buttonText}>Add Exercise</Text>
                   </TouchableOpacity>
                 </View>
               </View>
@@ -407,6 +509,21 @@ const styles = StyleSheet.create({
     marginLeft: 10,
     fontSize: 16,
     fontWeight: "500",
+  },
+  addButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: COLORS.accent,
+    padding: 15,
+    borderRadius: 10,
+    justifyContent: "center",
+    marginTop: 20,
+  },
+  addButtonText: {
+    color: COLORS.text,
+    fontSize: 16,
+    fontWeight: "600",
+    marginLeft: 8,
   },
 });
 
